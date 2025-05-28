@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     vue(),
     electron({
-      entry: 'src/electron/index.cjs'
+      entry: 'src/electron/index.js'
     }),
 
     renderer()
