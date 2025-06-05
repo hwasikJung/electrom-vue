@@ -85,11 +85,18 @@ ipcMain.handle('insert-test-data', async () => {
   }
 });
 
+// 상대 경로를 절대 경로로 변경
+const iconPath = path.join(__dirname, '../src/assets/icons/app-icon.ico');
+
 // 창 상태 유지 (선택사항)
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 1920,
-    height: 1090,
+    height: 1080,
+    // frame: false, // 기본 창 프레임 제거
+    // titleBarStyle: 'hidden', // 타이틀바 숨기기
+    icon: iconPath,
+
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

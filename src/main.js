@@ -17,7 +17,7 @@ library.add(faWindowMinimize, faWindowMaximize, faWindowClose);
 
 // Vue 앱 생성 및 설정
 const app = createApp(App);
-app.component('font-awesome-icon', FontAwesomeIcon);
+app.component('font-awesome-icons', FontAwesomeIcon);
 app.component('v-chart', VueECharts);
 
 app.mount('#app');

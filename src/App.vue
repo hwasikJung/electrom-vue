@@ -2,17 +2,17 @@
   <div class="container">
     <div class="title-bar">
       <div class="title prevent-select draggable">부서별 매출 차트</div>
-      <div class="control prevent-select">
+      <!--      <div class="control prevent-select">
         <button id="min" @click="minimize">
-          <font-awesome-icon icon="window-minimize" />
+          <font-awesome-icons icons="window-minimize" />
         </button>
         <button id="max" @click="maximize">
-          <font-awesome-icon icon="window-maximize" />
+          <font-awesome-icons icons="window-maximize" />
         </button>
         <button id="close" @click="close">
-          <font-awesome-icon icon="window-close" />
+          <font-awesome-icons icons="window-close" />
         </button>
-      </div>
+      </div>-->
     </div>
     <div class="content">
       <div class="chart-container">
@@ -84,18 +84,18 @@ const option = ref({
   ]
 });
 
-// 창 컨트롤 함수
-const minimize = () => {
-  window.electronAPI.minimize();
-};
-
-const maximize = () => {
-  window.electronAPI.maximize();
-};
-
-const close = () => {
-  window.electronAPI.close();
-};
+// // 창 컨트롤 함수
+// const minimize = () => {
+//   window.electronAPI.minimize();
+// };
+//
+// const maximize = () => {
+//   window.electronAPI.maximize();
+// };
+//
+// const close = () => {
+//   window.electronAPI.close();
+// };
 
 // 데이터 로드 함수
 const loadData = async () => {
@@ -161,7 +161,7 @@ body {
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
     sans-serif;
-  margin: 0px;
+  margin: 0;
 }
 
 body * {

@@ -323,7 +323,6 @@ sequelize.sync({ alter: true }).then(() => {
   console.error("데이터베이스 동기화 오류:", err);
 });
 ipcMain.handle("get-sales-data", async () => {
-  console.log("get-sales-data start");
   try {
     return await Sales.findAll({
       order: [
@@ -367,10 +366,14 @@ ipcMain.handle("insert-test-data", async () => {
     return false;
   }
 });
+const iconPath = path.join(__dirname, "../src/assets/icons/app-icon.ico");
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 1920,
-    height: 1090,
+    height: 1080,
+    // frame: false, // 기본 창 프레임 제거
+    // titleBarStyle: 'hidden', // 타이틀바 숨기기
+    icon: iconPath,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
