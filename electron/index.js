@@ -12,10 +12,11 @@
 
 import { config } from 'dotenv';
 
-import { app, BrowserWindow, Menu, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Pool } from 'pg';
+import sequelize from '/models/index.js';
+import Sales from '/models/Sales.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,32 +24,27 @@ const __dirname = path.dirname(__filename);
 // .env 파일 로드
 config({ path: path.join(__dirname, '../.env') });
 
-console.log('.env:', {
-  NODE_ENV: process.env.NODE_ENV,
-  BASE_URL: process.env.BASE_URL
-});
+// 데이터베이스 초기화
+sequelize
+  .sync({ alter: true }) // 개발 환경에서만 사용, 프로덕션에서는 false
+  .then(() => {
+    console.log('데이터베이스 동기화 완료');
+  })
+  .catch((err) => {
+    console.error('데이터베이스 동기화 오류:', err);
+  });
 
-// PostgreSQL 연결 설정
-const pool = new Pool({
-  host: process.env.DB_HOST || '223.195.131.15',
-  user: process.env.DB_USER || 'ibed_user01',
-  password: process.env.DB_PASSWORD || 'Passw0rd',
-  database: process.env.DB_NAME || 'ibedmst',
-  port: parseInt(process.env.DB_PORT || '15432'),
-  schema: process.env.DB_SCHEMA || 'sc_portal'
-});
-
+// IPC 핸들러 설정
 // IPC 핸들러 설정
 ipcMain.handle('get-sales-data', async () => {
   try {
-    const query = `
-      SELECT department, amount, year
-      FROM sc_portal.test_sales
-      ORDER BY department, year
-    `;
-
-    const result = await pool.query(query);
-    return result.rows;
+    return await Sales.findAll({
+      order: [
+        ['department', 'ASC'],
+        ['year', 'ASC']
+      ],
+      raw: true // 순수 JSON 객체로 반환
+    });
   } catch (err) {
     console.error('데이터 조회 오류:', err);
     return [];
@@ -56,35 +52,28 @@ ipcMain.handle('get-sales-data', async () => {
 });
 
 ipcMain.handle('insert-test-data', async () => {
+  console.log('insert-test-data start');
   try {
-    // 테이블이 없으면 생성
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS test_sales (
-        department VARCHAR(20),
-        amount INTEGER,
-        year INTEGER
-      )
-    `);
-
     // 기존 데이터 확인
-    const result = await pool.query(
-      'SELECT COUNT(*) FROM sc_portal.test_sales'
-    );
-    if (parseInt(result.rows[0].count) === 0) {
-      // 테스트 데이터 삽입
-      await pool.query(`
-        INSERT INTO test_sales (department, amount, year) VALUES
-        ('영업부', 120, 2023),
-        ('마케팅부', 132, 2023),
-        ('개발부', 101, 2023),
-        ('인사부', 134, 2023),
-        ('재무부', 90, 2023),
-        ('영업부', 220, 2024),
-        ('마케팅부', 182, 2024),
-        ('개발부', 191, 2024),
-        ('인사부', 234, 2024),
-        ('재무부', 290, 2024)
-      `);
+    const count = await Sales.count();
+
+    if (count === 0) {
+      // 테스트 데이터 생성
+      const testData = [
+        { department: '영업부', amount: 120, year: 2023 },
+        { department: '마케팅부', amount: 132, year: 2023 },
+        { department: '개발부', amount: 101, year: 2023 },
+        { department: '인사부', amount: 134, year: 2023 },
+        { department: '재무부', amount: 90, year: 2023 },
+        { department: '영업부', amount: 220, year: 2024 },
+        { department: '마케팅부', amount: 182, year: 2024 },
+        { department: '개발부', amount: 191, year: 2024 },
+        { department: '인사부', amount: 234, year: 2024 },
+        { department: '재무부', amount: 290, year: 2024 }
+      ];
+
+      await Sales.bulkCreate(testData);
+      console.log('테스트 데이터가 성공적으로 삽입되었습니다.');
       return true;
     } else {
       console.log('테스트 데이터가 이미 존재합니다.');

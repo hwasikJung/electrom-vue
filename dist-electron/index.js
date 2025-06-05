@@ -5,7 +5,7 @@ import require$$3 from "crypto";
 import { ipcMain, app, BrowserWindow, Menu } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Pool } from "pg";
+import { Sequelize, DataTypes } from "sequelize";
 var main = { exports: {} };
 const version = "16.5.0";
 const require$$4 = {
@@ -279,61 +279,84 @@ function requireMain() {
   return main.exports;
 }
 var mainExports = requireMain();
+const sequelize = new Sequelize({
+  dialect: "postgres",
+  host: process.env.DB_HOST || "223.195.131.15",
+  port: parseInt(process.env.DB_PORT || "15432"),
+  username: process.env.DB_USER || "ibed_user01",
+  password: process.env.DB_PASSWORD || "Passw0rd",
+  database: process.env.DB_NAME || "ibedmst",
+  define: {
+    schema: process.env.DB_SCHEMA || "sc_portal",
+    timestamps: false,
+    // 타임스탬프 필드 비활성화
+    freezeTableName: true
+    // 테이블 이름을 모델 이름 그대로 사용
+  },
+  logging: false
+});
+const Sales = sequelize.define("test_sales", {
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  department: {
+    type: DataTypes.STRING(20),
+    allowNull: false
+  },
+  amount: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  year: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  }
+});
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 mainExports.config({ path: path.join(__dirname, "../.env") });
-console.log(".env:", {
-  NODE_ENV: process.env.NODE_ENV,
-  BASE_URL: process.env.BASE_URL
-});
-const pool = new Pool({
-  host: process.env.DB_HOST || "223.195.131.15",
-  user: process.env.DB_USER || "ibed_user01",
-  password: process.env.DB_PASSWORD || "Passw0rd",
-  database: process.env.DB_NAME || "ibedmst",
-  port: parseInt(process.env.DB_PORT || "15432"),
-  schema: process.env.DB_SCHEMA || "sc_portal"
+sequelize.sync({ alter: true }).then(() => {
+  console.log("데이터베이스 동기화 완료");
+}).catch((err) => {
+  console.error("데이터베이스 동기화 오류:", err);
 });
 ipcMain.handle("get-sales-data", async () => {
+  console.log("get-sales-data start");
   try {
-    const query = `
-      SELECT department, amount, year
-      FROM sc_portal.test_sales
-      ORDER BY department, year
-    `;
-    const result = await pool.query(query);
-    return result.rows;
+    return await Sales.findAll({
+      order: [
+        ["department", "ASC"],
+        ["year", "ASC"]
+      ],
+      raw: true
+      // 순수 JSON 객체로 반환
+    });
   } catch (err) {
     console.error("데이터 조회 오류:", err);
     return [];
   }
 });
 ipcMain.handle("insert-test-data", async () => {
+  console.log("insert-test-data start");
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS test_sales (
-        department VARCHAR(20),
-        amount INTEGER,
-        year INTEGER
-      )
-    `);
-    const result = await pool.query(
-      "SELECT COUNT(*) FROM sc_portal.test_sales"
-    );
-    if (parseInt(result.rows[0].count) === 0) {
-      await pool.query(`
-        INSERT INTO test_sales (department, amount, year) VALUES
-        ('영업부', 120, 2023),
-        ('마케팅부', 132, 2023),
-        ('개발부', 101, 2023),
-        ('인사부', 134, 2023),
-        ('재무부', 90, 2023),
-        ('영업부', 220, 2024),
-        ('마케팅부', 182, 2024),
-        ('개발부', 191, 2024),
-        ('인사부', 234, 2024),
-        ('재무부', 290, 2024)
-      `);
+    const count = await Sales.count();
+    if (count === 0) {
+      const testData = [
+        { department: "영업부", amount: 120, year: 2023 },
+        { department: "마케팅부", amount: 132, year: 2023 },
+        { department: "개발부", amount: 101, year: 2023 },
+        { department: "인사부", amount: 134, year: 2023 },
+        { department: "재무부", amount: 90, year: 2023 },
+        { department: "영업부", amount: 220, year: 2024 },
+        { department: "마케팅부", amount: 182, year: 2024 },
+        { department: "개발부", amount: 191, year: 2024 },
+        { department: "인사부", amount: 234, year: 2024 },
+        { department: "재무부", amount: 290, year: 2024 }
+      ];
+      await Sales.bulkCreate(testData);
+      console.log("테스트 데이터가 성공적으로 삽입되었습니다.");
       return true;
     } else {
       console.log("테스트 데이터가 이미 존재합니다.");
